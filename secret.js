@@ -1,0 +1,1 @@
+export const connection = `mongodb+srv://mannandassani1410:lh6bjirN1PxmcGxn@ticketsystem.cnlvkrd.mongodb.net/?retryWrites=true&w=majority`
