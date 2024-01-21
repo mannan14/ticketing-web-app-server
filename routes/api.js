@@ -55,7 +55,6 @@ api.get('/support-tickets', async (req, res) => {
         // });
         
         let results = await collection.aggregate([
-            // {"$project": {"author": 1, "title": 1, "tags": 1, "date": 1}},
             {"$sort": {"dateCreated": -1}},
             {"$skip": page * ticketPerPage},
             {"$limit": ticketPerPage},
@@ -77,7 +76,6 @@ api.get('/support-tickets', async (req, res) => {
         //     }
         // });
         let results = await collection.aggregate([
-            // {"$project": {"author": 1, "title": 1, "tags": 1, "date": 1}},
             {"$sort": {"resolvedOn": -1}},
             {"$skip": page * ticketPerPage},
             {"$limit": ticketPerPage},
@@ -99,7 +97,6 @@ api.get('/support-tickets', async (req, res) => {
         //     }
         // });
         let results = await collection.aggregate([
-            // {"$project": {"author": 1, "title": 1, "tags": 1, "date": 1}},
             {"$sort": {"dateCreated": -1}},
             {"$skip": page * ticketPerPage},
             {"$limit": ticketPerPage},
@@ -108,22 +105,19 @@ api.get('/support-tickets', async (req, res) => {
     }
 })
 
-let supportAgents = []
 // Initialize a variable to keep track of the last assigned agent index
 let lastAssignedIndex = 0;
+let supportAgents = []
 
 // Function to get the next active support agent using round-robin
 const getNextSupportAgent = async () => {
     // get all the agents
     let collection = await db.collection("agents");
-    await collection.find()
-    // .sort({dateCreated: -1})
-    // .skip(page * ticketPerPage)
-    // .limit(ticketPerPage)
+    await collection.find({active: false})
     .toArray((err, result) => {
         if(err){
-            // res.status(500).send(err)
-            console.log(err)
+            res.status(500).send(err)
+            // console.log(err)
         }
         if(result){
             // res.json(result)
@@ -133,7 +127,7 @@ const getNextSupportAgent = async () => {
     });
 
     // Filter out inactive agents
-    const activeAgents = supportAgents.filter((agent) => agent.active);
+    // const activeAgents = supportAgents.filter((agent) => !agent.active);
     console.log(activeAgents)
     if (activeAgents.length === 0) {
         // No active agents available
@@ -148,7 +142,6 @@ const getNextSupportAgent = async () => {
 };
 
 api.post('/support-tickets',async (req, res) => {
-
     // Creating a new support ticket and assigning to a agent, setting agent to active
     let collection = await db.collection("tickets");
     let newDocument = req.body;
@@ -157,17 +150,33 @@ api.post('/support-tickets',async (req, res) => {
     const assignedTo = getNextSupportAgent();
     
     if (!assignedTo) {
-      return res.status(500).json({ error: "No active support agents available" });
-    }
-    newDocument.assignedTo = assignedTo;
-    newDocument.dateCreated = new Date();
-    newDocument.status = "Assigned";
-    let result = await collection.insertOne(newDocument);
-    if(result){
-        res.status(204).send(newDocument);
+        newDocument.assignedTo = "";
+        newDocument.dateCreated = new Date();
+        newDocument.status = "New";
+        let result = await collection.insertOne(newDocument);
+        if(result){
+            res.status(204).send(newDocument);
+        }
+        else{
+            res.status(500).send(err)
+        }
     }
     else{
-        res.status(500).send(err)
+        newDocument.assignedTo = assignedTo;
+        newDocument.dateCreated = new Date();
+        newDocument.status = "Assigned";
+        let result = await collection.insertOne(newDocument);
+        if(result){
+            res.status(204).send(newDocument);
+        }
+        else{
+            res.status(500).send(err)
+        }
+        // Update the assignedTo field in the agent document to set the agent to active
+        collection = await db.collection("agents");
+        let updateQuery = { _id: assignedTo._id };
+        let updateDocument = { $set: { active: true } };
+        await collection.updateOne(updateQuery, updateDocument);
     }
 })
 
