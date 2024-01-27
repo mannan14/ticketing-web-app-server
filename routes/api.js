@@ -4,23 +4,6 @@ const api = express();
 
 // routes
 api.post('/support-agents', async (req, res) => {
-    // client.connect(err => {
-    //     if (err) {
-    //         res.status(500).send(err)
-    //     }
-    //     const agent_data = req.body 
-    //     const data = client.db("ticketing-system").collection("agents")
-    //     data.insertOne(agent_data, (err, result) => {
-    //         if(err){
-    //             res.status(500).send(err)
-    //         }
-    //         if(result){
-    //             console.log("agent created")
-    //             res.json(result)
-    //         }
-    //         client.close()
-    //     })
-    // })
     let collection = await db.collection("agents");
     let newDocument = req.body;
     newDocument.active = false;
@@ -40,20 +23,6 @@ api.get('/support-tickets', async (req, res) => {
     const sort = req.params.sort || "dateCreated"
     const ticketPerPage = 3
     if(sort === "dateCreated"){
-        // await collection.find()
-        // .sort({dateCreated: -1})
-        // .skip(page * ticketPerPage)
-        // .limit(ticketPerPage)
-        // .toArray((err, result) => {
-        //     if(err){
-        //         res.status(500).send(err)
-        //     }
-        //     if(result){
-        //         res.json(result)
-        //         // res.status(200).send(results);
-        //     }
-        // });
-        
         let results = await collection.aggregate([
             {"$sort": {"dateCreated": -1}},
             {"$skip": page * ticketPerPage},
@@ -62,19 +31,6 @@ api.get('/support-tickets', async (req, res) => {
         res.send(results).status(200);
     }
     else if(sort === "resolvedOn"){
-        // await collection.find()
-        // .sort({resolvedOn: -1})
-        // .skip(page * ticketPerPage)
-        // .limit(ticketPerPage)
-        // .toArray((err, result) => {
-        //     if(err){
-        //         res.status(500).send(err)
-        //     }
-        //     if(result){
-        //         res.json(result)
-        //         // res.status(200).send(results);
-        //     }
-        // });
         let results = await collection.aggregate([
             {"$sort": {"resolvedOn": -1}},
             {"$skip": page * ticketPerPage},
@@ -83,19 +39,6 @@ api.get('/support-tickets', async (req, res) => {
         res.send(results).status(200);
     }
     else{
-        // await collection.find()
-        // .sort({dateCreated: -1})
-        // .skip(page * ticketPerPage)
-        // .limit(ticketPerPage)
-        // .toArray((err, result) => {
-        //     if(err){
-        //         res.status(500).send(err)
-        //     }
-        //     if(result){
-        //         res.json(result)
-        //         // res.status(200).send(results);
-        //     }
-        // });
         let results = await collection.aggregate([
             {"$sort": {"dateCreated": -1}},
             {"$skip": page * ticketPerPage},
@@ -109,7 +52,7 @@ api.get('/support-tickets', async (req, res) => {
 let lastAssignedIndex = 0;
 let supportAgents = []
 
-// Function to get the next active support agent using round-robin
+// Function to get the next active support agent using ROUND-ROBIN METHOD
 const getNextSupportAgent = async () => {
     // get all the agents
     let collection = await db.collection("agents");
@@ -128,17 +71,17 @@ const getNextSupportAgent = async () => {
 
     // Filter out inactive agents
     // const activeAgents = supportAgents.filter((agent) => !agent.active);
-    console.log(activeAgents)
-    if (activeAgents.length === 0) {
+    // console.log(activeAgents)
+    if (supportAgents.length === 0) {
         // No active agents available
         return null;
     }
 
     // Get the next support agent using round-robin logic
-    const nextAgentIndex = (lastAssignedIndex + 1) % activeAgents.length;
+    const nextAgentIndex = (lastAssignedIndex + 1) % supportAgents.length;
     lastAssignedIndex = nextAgentIndex;
 
-    return activeAgents[nextAgentIndex];
+    return supportAgents[nextAgentIndex];
 };
 
 api.post('/support-tickets',async (req, res) => {
